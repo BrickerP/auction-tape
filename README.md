@@ -22,7 +22,7 @@ shares of competitive awards. Then it computes:
 | Metric | Meaning |
 | --- | --- |
 | **Demand score** | Average of three z-scores against the previous `--window` (default 12) same-tenor auctions: bid-to-cover (higher = stronger), indirect share (higher = stronger; includes foreign official buyers) and dealer share (inverted, since dealers are the buyer of last resort). An auction is never part of its own baseline. ≥ +1 = **strong**, ≤ −1 = **soft**, otherwise **in line**. |
-| **Tail / stop-through** | High yield minus the when-issued (WI) yield, in bp. Positive = tail (weak), negative = stop-through (strong). Pass the WI yield with `--wi 10Y=4.512`, or use `--approx-wi` to approximate it with that day's Treasury closing par yield. The close comes a few hours after the 1pm ET auction, so treat it as a rough proxy. |
+| **Tail / stop-through** | High yield minus the when-issued (WI) yield, in bp. Positive = tail (weak), negative = stop-through (strong). Pass the WI yield with `--wi 10Y=4.512`, or use `--approx-wi` to approximate it with that day's Treasury closing par yield. The close comes a few hours after the 1pm ET auction, so treat it as a rough proxy (see the note below). |
 | **High − average yield** | How spread out the accepted bids were, in bp. |
 
 It's a transparent summary statistic, not a forecast and not financial advice.
@@ -53,16 +53,24 @@ Options: `--days` (history to fetch, default 420), `--window` (baseline size, de
 
 ## Sample output
 
-Live run on 2026-10-09 with `auction-tape --approx-wi` (tail measured against the day's close):
+Live run on 2026-10-09, with the published when-issued yields at the bid deadline for the latest 10Y and 30Y
+(`auction-tape --wi 10Y=5.317 --wi 30Y=5.617`):
 
 ```text
 term     auction      high%   btc  indir%  dealer%  score  read      tail bp
 ----------------------------------------------------------------------------
-2-Year   2026-09-22   4.787  2.63    57.8     13.2  -0.03  in line      +7.7
-5-Year   2026-09-23   5.033  2.21    54.3     15.8  -2.60  soft         +4.3
-10-Year  2026-10-07   5.300  2.77    80.3      2.5  +2.37  strong       +2.0
-30-Year  2026-10-08   5.618  2.54    72.3      6.8  +0.98  in line      +1.8
+2-Year   2026-09-22   4.787  2.63    57.8     13.2  -0.03  in line         –
+5-Year   2026-09-23   5.033  2.21    54.3     15.8  -2.60  soft            –
+10-Year  2026-10-07   5.300  2.77    80.3      2.5  +2.37  strong       -1.7
+30-Year  2026-10-08   5.618  2.54    72.3      6.8  +0.98  in line      +0.1
 ```
+
+The Oct 7 10Y reopening cleared at 5.300%, the highest 10Y auction yield since 2000, yet it posted the highest
+demand score of any 10Y scored in the data (since Jan 2026): bid-to-cover z +2.9, 80.3% indirect, 2.5% dealer, and a 1.7 bp stop-through.
+
+> **About `--approx-wi`:** the closing yield can be far from the WI yield at 1pm ET. On that same 10Y, the day's
+> close (5.28%) gives a +2.0 bp "tail", while the real result against WI was a 1.7 bp stop-through, because yields
+> rallied after the auction. Use `--wi` whenever you have the number.
 
 `--json` gives one object per tenor with every input and component, e.g. `z_bid_to_cover`, `z_indirect`,
 `z_dealer_inverted`, `demand_score`, `label`, `wi_yield`, `wi_source` (`given` or `close`) and `tail_bp`.
